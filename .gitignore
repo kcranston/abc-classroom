@@ -8,7 +8,7 @@ docs/_build
 .DS_Store
 # Byte-compiled / optimized / DLL files
 __pycache__/
-
+.abc-tokens.yml
 
 # Unit test / coverage reports
 htmlcov/
