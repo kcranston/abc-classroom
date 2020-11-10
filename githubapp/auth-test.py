@@ -1,5 +1,9 @@
+# Testing user-to-server authentication tokens. Used to perform
+# actions on behalf of users
+# See https://docs.github.com/en/free-pro-team@latest/developers/apps/
+# identifying-and-authorizing-users-for-github-apps
+
 import requests
-import time
 from ruamel.yaml import YAML
 
 from argparse import ArgumentParser
@@ -63,8 +67,6 @@ def get_login_code(client_id):
         )
     )
 
-    return device_code
-
 
 def poll_for_status(client_id):
     # header = {"Content-Type": "application/json"}
@@ -95,46 +97,74 @@ def poll_for_status(client_id):
     print("Status code: ", r.status_code)
     print(r.json())
     data = r.json()
-    access_token_expiry = int(time.time()) + data["expires_in"]
-    refresh_token_expiry = int(time.time()) + data["refresh_token_expires_in"]
     write_github_auth("access_token", data["access_token"])
-    write_github_auth("access_token_expiry", access_token_expiry)
-    write_github_auth("refresh_token", data["refresh_token"])
-    write_github_auth("refresh_token_expiry", refresh_token_expiry)
 
 
 def get_access_token():
     auth_info = get_github_auth()
-    # check the expiry
-    expiry = auth_info["access_token_expiry"]
-    print("Access token expires at {}".format(time.ctime(expiry)))
-    if expiry > time.time():
+    try:
         access_token = auth_info["access_token"]
-    else:
-        print("access token expired; refreshing")
-        access_token = None
-    return access_token
+        return access_token
+    except KeyError:
+        print("No access token found")
+        return None
 
 
-def remote_repo_exists(org, repository):
+def remote_repo_exists(org, repository, token):
     """Check if the remote repository exists for the organization."""
-    access_token = get_access_token()
-    if access_token is None:
-        return
     header = {
         "Content-Type": "application/json",
-        "Accept": "application/json",
-        "Authorization": "token {}".format(access_token),
+        "Accept": "application/vnd.github.v3+json",
+        "Authorization": "token {}".format(token),
     }
     r = requests.get(
         "https://api.github.com/repos/{}/{}".format(org, repository),
         headers=header,
     )
     status_code = r.status_code
+    # print(r.json())
     if status_code == 200:
         return True
     else:
         return False
+
+
+def get_auth_header(token):
+    header = {
+        "Content-Type": "application/json",
+        "Accept": "application/vnd.github.v3+json",
+        "Authorization": "token {}".format(token),
+    }
+    return header
+
+
+def update_issue(token):
+    print("Trying to update issue")
+    # header = {
+    #     "Content-Type": "application/json",
+    #     "Accept": "application/vnd.github.v3+json",
+    #     "Authorization": "token {}".format(token),
+    # }
+    payload = {
+        "title": "Create default commit message for abc-update-template"
+    }
+    r = requests.patch(
+        "https://api.github.com/repos/earthlab/abc-classroom/issues/310",
+        headers=get_auth_header(token),
+        json=payload,
+    )
+    print(r.status_code)
+    print(r.json())
+
+
+def get_user_installations(token):
+    # GET /user/installations
+    r = requests.get(
+        "https://api.github.com/user/installations",
+        headers=get_auth_header(token),
+    )
+    print(r.status_code)
+    print(r.json())
 
 
 if __name__ == "__main__":
@@ -142,24 +172,44 @@ if __name__ == "__main__":
     parser.add_argument(
         "client_id", help="""The client id of your github app."""
     )
-    parser.add_argument(
-        "--noauth",
-        action="store_true",
-        help="""Does not ask for device code; just poll API.""",
-    )
+
     args = parser.parse_args()
 
-    if not args.noauth:
-        device_code = get_login_code(args.client_id)
+    # There are three steps:
+    # Check for presence of authorization info in the file .abc-tokens.yaml
+    # If the file does not exist, start by getting a login code for the user
+    # If authorization info exists, check that the access_token is present
+    # If it is not present, poll for an access code using the device code
+    # If we have a valid access_token, then call the API using that token
 
+    auth_info = get_github_auth()
+    if not auth_info:
+        get_login_code(args.client_id)
         input("Press RETURN to continue after inputting the code successfully")
+        poll_for_status(args.client_id)
 
-    poll_for_status(args.client_id)
+    token = get_access_token()
+    if token is None:
+        poll_for_status(args.client_id)
 
+    get_user_installations(token)
+
+    print("Get public repo")
     repo_name = "hub-ops"
     organization = "earthlab"
 
-    if remote_repo_exists(organization, repo_name):
-        print("repo {} exists!".format(repo_name))
+    if remote_repo_exists(organization, repo_name, token):
+        print(" repo {} exists!".format(repo_name))
     else:
-        print("no repo {} :(".format(repo_name))
+        print(" no repo {} :(".format(repo_name))
+
+    print("Get private repo")
+    repo_name = "spring-2020-eapython-nbgrader"
+    organization = "earth-analytics-edu"
+
+    if remote_repo_exists(organization, repo_name, token):
+        print(" repo {} exists!".format(repo_name))
+    else:
+        print(" no repo {} :(".format(repo_name))
+
+    update_issue(token)
