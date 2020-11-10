@@ -34,5 +34,14 @@ The other abc scripts access git and github actions as follows:
 
 So, the two calls that we need to modify are
 
-https://docs.github.com/en/free-pro-team@latest/rest/reference/repos#create-an-organization-repository
-https://docs.github.com/en/free-pro-team@latest/rest/reference/repos#get-a-repository 
+https://docs.github.com/en/free-pro-team@latest/rest/reference/repos#create-an-organization-repository - requires authentication
+https://docs.github.com/en/free-pro-team@latest/rest/reference/repos#get-a-repository - this does not need authentication for public repos, but does
+for private repos (which is true in our case)
+
+## Authentication methods
+
+There are two types of authetication methods for a GitHub app. You can
+authenticate as the installed app (so actions are done on behalf of the app),
+or you can authenticate as a user (so actions are done on behalf of the user).
+The `auth-test.py` script has sample code for user authentication and the
+`jwt-auth.py` script has sample code for installation authentication.
