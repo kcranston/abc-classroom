@@ -101,10 +101,15 @@ def create_repo(org, repository, token):
         )
 
 
-def add_remote(directory, organization, remote_repo, token):
-    remote_url = "https://{}@github.com/{}/{}".format(
-        token, organization, remote_repo
-    )
+def add_remote(directory, organization, remote_repo, token=None):
+    if token is None:
+        remote_url = "git@github.com:{}/{}.git".format(
+            organization, remote_repo
+        )
+    else:
+        remote_url = "https://{}@github.com/{}/{}".format(
+            token, organization, remote_repo
+        )
     _call_git("remote", "add", "origin", remote_url, directory=directory)
 
 
@@ -112,6 +117,21 @@ def repo_changed(directory):
     """Determine if the Git repository in directory is dirty"""
     ret = _call_git("status", "--porcelain", directory=directory)
     return bool(ret.stdout)
+
+
+def master_branch_to_main(directory):
+    """Change the name of the master branch to main"""
+    print(
+        """Changing name of 'master' branch to 'main'
+        in repo {}""".format(
+            directory
+        )
+    )
+    try:
+        _call_git("branch", "-m", "master", "main", directory=directory)
+    except RuntimeError:
+        # we get here if the master branch has already been renamed
+        pass
 
 
 def new_branch(directory, name=None):
