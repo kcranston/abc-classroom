@@ -39,18 +39,26 @@ def write_github_auth(token_type, token_value):
         yaml.dump(newconfig, f)
 
 
-def get_login_code(client_id):
+def _get_login_code(client_id):
+    # make the call
     header = {"Content-Type": "application/json", "Accept": "application/json"}
     payload = {"client_id": client_id}
     link = "https://github.com/login/device/code"
     r = requests.post(link, headers=header, json=payload)
-    print(r.json())
+
+    # process the response
     data = r.json()
+    status = r.status_code
+    if status != 200:
+        # print the response if the call failed
+        print(r.json())
+        return None
+
     device_code = data["device_code"]
     uri = data["verification_uri"]
     user_code = data["user_code"]
-    write_github_auth("client_id", client_id)
-    write_github_auth("device_code", device_code)
+    # write_github_auth("client_id", client_id)
+    # write_github_auth("device_code", device_code)
 
     # prompt the user to enter the code
     print(
@@ -58,22 +66,12 @@ def get_login_code(client_id):
             uri, user_code
         )
     )
-    return r.status_code
+    input("Press RETURN to continue after inputting the code successfully")
+
+    return device_code
 
 
-def poll_for_status(client_id):
-    githubconfig = get_github_auth()
-    if githubconfig is None:
-        print(
-            """No github authentication info found; re-run without
-            noauth flag to authenticate"""
-        )
-        return
-    try:
-        device_code = githubconfig["device_code"]
-    except KeyError:
-        print("No device code found; re-run without noauth flag to generate")
-        return
+def _poll_for_status(client_id, device_code):
 
     header = {"Content-Type": "application/json", "Accept": "application/json"}
     payload = {
@@ -90,16 +88,26 @@ def poll_for_status(client_id):
     print(r.json())
     data = r.json()
     write_github_auth("access_token", data["access_token"])
+    return data["access_token"]
 
 
 def get_access_token():
+    # first, we see if we have a saved token
     auth_info = get_github_auth()
-    try:
-        access_token = auth_info["access_token"]
+    if auth_info:
+        try:
+            access_token = auth_info["access_token"]
+            return access_token
+        except KeyError:
+            print("No access token found")
+            return None
+    else:
+        # generate a new token
+        # client id for the abc-classroom-bot GitHub App
+        client_id = "Iv1.8df72ad9560c774c"
+        device_code = _get_login_code(client_id)
+        access_token = _poll_for_status(client_id, device_code)
         return access_token
-    except KeyError:
-        print("No access token found")
-        return None
 
 
 def get_auth_header(token):

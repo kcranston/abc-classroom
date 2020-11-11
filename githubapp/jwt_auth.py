@@ -181,21 +181,45 @@ def get_refresh_token(installation_id):
     return access_token
 
 
+def create_repo(name, token):
+    # curl \
+    #   -X POST \
+    #   -H "Accept: application/vnd.github.v3+json" \
+    #   https://api.github.com/orgs/ORG/repos \
+    #   -d '{"name":"name"}'
+    print("Creating repository {} in org earth-analytics-edu".format(name))
+    header = _get_access_token_header(token)
+    payload = {"name": name}
+    r = requests.post(
+        "https://api.github.com/orgs/earth-analytics-edu/repos",
+        headers=header,
+        json=payload,
+    )
+    print("Returned ", r.status_code)
+    print(r.json())
+
+
 if __name__ == "__main__":
 
     parser = ArgumentParser()
     parser.add_argument(
         "action",
-        choices=["installations", "repos", "token", "info"],
+        choices=["installations", "repos", "token", "info", "create"],
         help="""Call GitHub API with app. Choices are installations (list
         installations), repos (test getting public and private repos),
-        token (get / refresh access token), info (get info about app).""",
+        token (get / refresh access token), info (get info about app),
+        create (create a respository).""",
     )
     parser.add_argument(
         "--id",
         dest="installation_id",
         help="""The installation id for generating an access token; use
         installations option to list installations.""",
+    )
+    parser.add_argument(
+        "--repo",
+        dest="repo_name",
+        help="""The name of the respository to create.""",
     )
     args = parser.parse_args()
     if args.action == "token":
@@ -229,3 +253,19 @@ if __name__ == "__main__":
         else:
             access_token = get_refresh_token(args.installation_id)
             get_repos(access_token)
+
+    if args.action == "create":
+        if args.installation_id is None:
+            print(
+                """You must specify an installation_id with --id to create
+                repos. Use the installations action to list installations."""
+            )
+        else:
+            if args.repo_name is None:
+                print(
+                    """Must specify repo name with --repo to create a
+                repository."""
+                )
+            else:
+                access_token = get_refresh_token(args.installation_id)
+                create_repo(args.repo_name, access_token)

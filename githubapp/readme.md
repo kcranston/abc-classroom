@@ -38,10 +38,14 @@ https://docs.github.com/en/free-pro-team@latest/rest/reference/repos#create-an-o
 https://docs.github.com/en/free-pro-team@latest/rest/reference/repos#get-a-repository - this does not need authentication for public repos, but does
 for private repos (which is true in our case)
 
-## Authentication methods
+## Authentication
 
 There are two types of authetication methods for a GitHub app. You can
 authenticate as the installed app (so actions are done on behalf of the app),
 or you can authenticate as a user (so actions are done on behalf of the user).
 The `auth-test.py` script has sample code for user authentication and the
 `jwt-auth.py` script has sample code for installation authentication.
+
+The permissions are much more find-grained than with a personal access token.
+With a personal access token (the method we are using now), the token allows
+you to anything through the API that you can do via the GitHub web interface.
