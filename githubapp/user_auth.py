@@ -10,14 +10,14 @@ from ruamel.yaml import YAML
 
 def get_github_auth():
     """
-    Attempts to open the local file '.abc-classroom.tokens.yml'
+    Attempts to open the local file '.abc-user-tokens.yml'
     containing github API authentication information. Returns the
     contents of the 'github' section. Returns an empty dictionary
     if the file does not exist.
     """
     yaml = YAML()
     try:
-        with open(".abc-tokens.yml") as f:
+        with open(".abc-user-tokens.yml") as f:
             config = yaml.load(f)
         return config["github"]
 
@@ -28,14 +28,14 @@ def get_github_auth():
 def write_github_auth(token_type, token_value):
     """
     Adds the (key,value) pair (token_type, token_value) to the github
-    config file '.abc-tokens.yml', overwriting any existing
+    config file '.abc-user-tokens.yml', overwriting any existing
     value for the key. Creates the file if it does not exist.
     """
     yaml = YAML()
     currentvalues = get_github_auth()
     currentvalues[token_type] = token_value
     newconfig = {"github": currentvalues}
-    with open(".abc-tokens.yml", "w") as f:
+    with open(".abc-user-tokens.yml", "w") as f:
         yaml.dump(newconfig, f)
 
 
@@ -100,25 +100,6 @@ def get_access_token():
     except KeyError:
         print("No access token found")
         return None
-
-
-def remote_repo_exists(org, repository, token):
-    """Check if the remote repository exists for the organization."""
-    header = {
-        "Content-Type": "application/json",
-        "Accept": "application/vnd.github.v3+json",
-        "Authorization": "token {}".format(token),
-    }
-    r = requests.get(
-        "https://api.github.com/repos/{}/{}".format(org, repository),
-        headers=header,
-    )
-    status_code = r.status_code
-    # print(r.json())
-    if status_code == 200:
-        return True
-    else:
-        return False
 
 
 def get_auth_header(token):
