@@ -4,6 +4,15 @@ This directory contains notes and testing scripts for changing our GitHub
 authentication for upcoming deprecation of password-based access to the
 API; see [GitHub  blog post](https://developer.github.com/changes/2020-02-14-deprecating-password-auth/).
 
+Contents of this directory:
+
+* user_auth.py : collection of functions for user-based authentication
+* jwt_auth.py : script to test installation-based authorization
+* auth-test.py : script to test various git things with user-based authentication
+* test-git-actions.py : testing the abc-template functionalith with user-based authentication
+
+# Existing abc-classroom git actions
+
 We access git and github functionality two ways in `abc-classroom`:
 
 1. Command-line git operations (e.g. `git commit` or `git clone`)
@@ -40,12 +49,27 @@ for private repos (which is true in our case)
 
 ## Authentication
 
-There are two types of authetication methods for a GitHub app. You can
+There are two types of authentication methods for a GitHub app. You can
 authenticate as the installed app (so actions are done on behalf of the app),
 or you can authenticate as a user (so actions are done on behalf of the user).
 The `auth-test.py` script has sample code for user authentication and the
 `jwt-auth.py` script has sample code for installation authentication.
 
+Installation-based authentication requires that the app has access to its
+private key in order to generate the JSON Web Token (JWT). It is unclear to
+me how to handle this with a command-line app that is installed on the user's
+computer (with a web-based app, you would have the private key on a server
+that is not accessible to the user.)
+
+I've gone with user-based authentication via the device flow process. See the
+[GitHub docs for user-based authentication](https://docs.github.com/en/free-pro-team@latest/developers/apps/identifying-and-authorizing-users-for-github-apps).
+I am not using expiring user tokens at this point, as this would require the
+app to have access to the private key).
+
 The permissions are much more find-grained than with a personal access token.
 With a personal access token (the method we are using now), the token allows
 you to anything through the API that you can do via the GitHub web interface.
+
+With the GitHub App, you _install_ the app on the organization where you are
+going to 'do things' and set the exact permissions that you need. You then
+_authenticate_ a user to perform those operations in the organization.
