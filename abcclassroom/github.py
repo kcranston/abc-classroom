@@ -1,7 +1,6 @@
 """
 abc-classroom.github
 ====================
-
 """
 
 import os
@@ -10,7 +9,6 @@ import random
 import string
 import subprocess
 import sys
-
 import requests
 
 import github3 as gh3
@@ -20,7 +18,7 @@ from .config import get_github_auth, set_github_auth
 
 
 def get_access_token():
-    """ Get a GitHub access token for the API
+    """Get a GitHub access token for the API
 
     First tries to read from local token file. If token does not exist,
     or is not valid, generates a new token using the OAuth Device Flow.
@@ -120,7 +118,7 @@ def _get_login_code(client_id):
 
 
 def _poll_for_status(client_id, device_code):
-    """ Polls API to see if user entered the device code
+    """Polls API to see if user entered the device code
 
     This is the second step of the Device Flow. Returns an access token, and
     also writes the token to a file in the user's home directory.
@@ -330,7 +328,7 @@ def _master_branch_to_main(directory):
         pass
 
 
-def push_to_github(directory, branch="master"):
+def push_to_github(directory, branch="main"):
     """Push `branch` back to GitHub"""
     try:
         _call_git(
