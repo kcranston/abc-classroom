@@ -389,9 +389,10 @@ def push_to_github(directory, branch="main"):
     try:
         # first, check that local git set up with ssh keys for github
         check_git_ssh()
-        _call_git(
+        ret = _call_git(
             "push", "--set-upstream", "origin", branch, directory=directory
         )
+        return ret
     except RuntimeError as e:
         raise e
 
