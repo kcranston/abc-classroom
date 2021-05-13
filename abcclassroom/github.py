@@ -321,7 +321,11 @@ def commit_all_changes(directory, msg=None):
         _call_git("add", "*", directory=directory)
         _call_git("commit", "-a", "-m", msg, directory=directory)
     else:
-        print("No changes in repository {}; doing nothing".format(directory))
+        print(
+            "No changes in repository {}; nothing to git commit".format(
+                directory
+            )
+        )
 
 
 def init_and_commit(directory, custom_message=False):
