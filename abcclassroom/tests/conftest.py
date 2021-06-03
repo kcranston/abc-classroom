@@ -90,8 +90,8 @@ def course_with_student_clones(
     course_structure_assignment, tmp_path, test_data
 ):
     """
-    Creates the final piece of a typical course including student cloned
-    repos for the assignment. Student names and list of files come
+    Creates the pieces of a typical course for testing clone-related
+    functions. Student names and list of files come
     from test_data fixture
     """
     config, assignment_name, release_path = course_structure_assignment
@@ -107,4 +107,24 @@ def course_with_student_clones(
         assignment_path.mkdir(parents=True, exist_ok=True)
         for f in test_data["files"]:
             Path(assignment_path, f).touch()
+    return config, assignment_name, students
+
+
+@pytest.fixture
+def course_with_feedback(course_with_student_clones, tmp_path, test_data):
+    """
+    Building on course_with_student_clones, adds a feedback directory
+    to course_materials and puts some files in there for testing.
+    """
+    config, assignment_name, students = course_with_student_clones
+    top_feedback_dir = Path(config["course_materials"], "feedback")
+    students = test_data["students"]
+    files_to_create = ["feedback.html", "not_html.txt"]
+    # Loop through students and create a feedback dir and some files
+    # path is course_materials/feedback/student/assignment/
+    for s in students:
+        feedback_dir = Path(top_feedback_dir, s, assignment_name)
+        feedback_dir.mkdir(parents=True, exist_ok=True)
+        for f in files_to_create:
+            Path(feedback_dir, f).touch()
     return config, assignment_name, students
