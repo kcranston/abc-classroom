@@ -4,11 +4,14 @@ extra files, for tests.
 """
 
 import os
+import csv
 from pathlib import Path
 
 import pytest
 
 from abcclassroom.quickstart import create_dir_struct
+from abcclassroom.github import init_and_commit
+
 import abcclassroom.config as cf
 
 
@@ -52,7 +55,7 @@ def config_file(default_config, tmp_path):
 
 
 @pytest.fixture
-def sample_course_structure(tmp_path):
+def sample_course_structure(tmp_path, test_data):
     """Creates the quickstart demo directory setup for testing"""
     course_name = "demo-course"
     # Run quickstart
@@ -63,6 +66,16 @@ def sample_course_structure(tmp_path):
     config = cf.get_config(configpath=path_to_course)
     config["course_directory"] = path_to_course
     os.chdir(path_to_course)
+
+    # also write a roster file in the course_dir
+    data = test_data
+    roster_path = Path(path_to_course, "classroom_roster.csv")
+    with open(roster_path, "w", newline="") as csv_output:
+        writer = csv.writer(csv_output)
+        writer.writerow(["github_username"])
+        for s in data["students"]:
+            writer.writerow([s])
+
     return course_name, config
 
 
@@ -92,7 +105,8 @@ def course_with_student_clones(
     """
     Creates the pieces of a typical course for testing clone-related
     functions. Student names and list of files come
-    from test_data fixture
+    from test_data fixture. Initalizes a git repo in clone_dir for
+    each student.
     """
     config, assignment_name, release_path = course_structure_assignment
 
@@ -107,6 +121,7 @@ def course_with_student_clones(
         assignment_path.mkdir(parents=True, exist_ok=True)
         for f in test_data["files"]:
             Path(assignment_path, f).touch()
+        init_and_commit(assignment_path)
     return config, assignment_name, students
 
 
@@ -119,12 +134,18 @@ def course_with_feedback(course_with_student_clones, tmp_path, test_data):
     config, assignment_name, students = course_with_student_clones
     top_feedback_dir = Path(config["course_materials"], "feedback")
     students = test_data["students"]
+    clone_dir = config["clone_dir"]
     files_to_create = ["feedback.html", "not_html.txt"]
     # Loop through students and create a feedback dir and some files
     # path is course_materials/feedback/student/assignment/
     for s in students:
+        # create some feedback in the course_materials dir
         feedback_dir = Path(top_feedback_dir, s, assignment_name)
         feedback_dir.mkdir(parents=True, exist_ok=True)
         for f in files_to_create:
             Path(feedback_dir, f).touch()
+        # create a cloned repo directory (the destination for feedback)
+        repo_name = "{}-{}".format(assignment_name, s)
+        repo_dir = Path(clone_dir, assignment_name, repo_name)
+        repo_dir.mkdir(parents=True, exist_ok=True)
     return config, assignment_name, students

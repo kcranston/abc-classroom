@@ -16,35 +16,32 @@ from . import scrub_feedback as sf
 
 def scrub_html_files(source_dir):
     """Iterates through the source_dir, and for any html files found,
-    scrubs them (which removes hidden test info). We also print
+    scrubs them (which removes hidden test info). Returns the total
+    number of files found and the number scrubbed.
     """
     all_contents = Path(source_dir).rglob("*")
     all_files = [f for f in all_contents if f.is_file()]
-    html_files = [f for f in all_files if f.suffix == "html"]
+    html_files = [f for f in all_files if f.suffix == ".html"]
     for file in html_files:
         sf.scrub_feedback(file)
-    print(
-        "Found {} files in {}; scrubbed {} html files.".format(
-            len(all_files), source_dir, len(html_files)
-        )
-    )
+    return (len(all_files), len(html_files))
 
 
 def feedback_files_exist(feedback_dir):
     """Checks if there are any non-hidden files in feedback_dir.
-    Prints a warning if there are not. Helpful because utils.copy_files
+    Used to print a warning because utils.copy_files
     does not provide output on what's being copied (due to the use of
     python's copytree to do the heavy lifting)."""
     contents = Path(feedback_dir).rglob("*")
     all_files = [f for f in contents if f.is_file()]
-    non_hidden = [f for f in all_files if not str(f).startswith(".")]
+    non_hidden = [f for f in all_files if not str(f.name).startswith(".")]
     if len(non_hidden) == 0:
         return False
     else:
         return True
 
 
-def copy_feedback_files(assignment_name, push_to_github=False, scrub=False):
+def copy_push_feedback(assignment_name, push_to_github=False, scrub=False):
     """Copies feedback reports to local student repositories, commits the
     changes,
     and (optionally) pushes to github. Assumes files are in the directory
@@ -103,7 +100,12 @@ def copy_feedback_files(assignment_name, push_to_github=False, scrub=False):
                 # are there any files in the feedback dir?
                 if feedback_files_exist(source_dir):
                     if scrub:
-                        scrub_html_files(source_dir)
+                        (allfiles, htmlfiles) = scrub_html_files(source_dir)
+                        print(
+                            "Found {} files in {}; scrubbed {} html "
+                            "files.".format(allfiles, source_dir, htmlfiles)
+                        )
+
                     utils.copy_files(
                         source_dir, destination_dir, files_to_ignore
                     )
@@ -156,8 +158,7 @@ def copy_feedback_files(assignment_name, push_to_github=False, scrub=False):
                         )
 
     except FileNotFoundError as err:
-        # this could be the top-level feedback dir, the feedback dir for a
-        # particular student, or the roster file
+        # this could be the top-level feedback dir or the roster file
         print("Error! Could not find file or directory:")
         print(" ", err)
 
@@ -192,4 +193,4 @@ def copy_feedback(args):
     push_to_github = args.github
     scrub = args.scrub
 
-    copy_feedback_files(assignment_name, push_to_github, scrub)
+    copy_push_feedback(assignment_name, push_to_github, scrub)
